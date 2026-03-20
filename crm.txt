@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comexim Global Trade Orchestrator</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --burgundy-deep:   #1a0a0f;
+    --burgundy-dark:   #2d0f1a;
+    --burgundy-mid:    #5c1f33;
+    --burgundy-light:  #8b2e4a;
+    --burgundy-bright: #b03060;
+    --gold-deep:       #7a5c00;
+    --gold-mid:        #c49a00;
+    --gold-bright:     #f0c419;
+    --gold-light:      #f5d76e;
+    --text-primary:    #fdf8f0;
+    --text-secondary:  #d4a5b0;
+    --text-muted:      #8a6070;
+    --card-bg:         #220d14;
+    --card-border:     #3d1525;
+    --divider:         #2d1520;
+  }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--burgundy-light);
+    color: var(--text-primary);
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse at 20% 20%, rgba(92,31,51,0.4) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 80%, rgba(176,48,96,0.15) 0%, transparent 60%);
+  }
+  .header {
+    background: linear-gradient(135deg, #1a0a0f 0%, #2d0f1a 50%, #1a0a0f 100%);
+    border-bottom: 1px solid rgba(240,196,25,0.25);
+    padding: 14px 28px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header-left { display: flex; align-items: center; gap: 14px; }
+  .logo {
+    width: 42px; height: 42px;
+    background: linear-gradient(135deg, var(--burgundy-light), var(--gold-mid));
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Playfair Display', serif;
+    font-size: 20px; font-weight: 800; color: white;
+    box-shadow: 0 4px 20px rgba(176,48,96,0.4);
+  }
+  .app-name { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 700; color: var(--text-primary); }
+  .app-subtitle { font-size: 10px; color: var(--gold-mid); font-weight: 600; letter-spacing: 2px; text-transform: uppercase; margin-top: 1px; }
+  .header-badge {
+    background: linear-gradient(135deg, rgba(240,196,25,0.15), rgba(240,196,25,0.05));
+    border: 1px solid rgba(240,196,25,0.3);
+    border-radius: 20px; padding: 6px 16px;
+    font-size: 12px; color: var(--gold-bright); font-weight: 600;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .pulse {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--gold-bright); box-shadow: 0 0 8px var(--gold-bright);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(0.8)} }
+  .last-updated { font-size: 10px; color: var(--text-muted); }
+  .main { padding: 24px 28px; max-width: 1600px; margin: 0 auto; }
+  .loading-bar {
+    height: 3px; background: linear-gradient(90deg, var(--burgundy-light), var(--gold-mid), var(--burgundy-light));
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 2px; margin-bottom: 20px;
+    display: none;
+  }
+  @keyframes loading { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+  .kpi-grid { display: grid; grid-template-columns: repeat(6,1fr); gap: 14px; margin-bottom: 22px; }
+  .kpi-card {
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: 16px; padding: 18px 16px;
+    position: relative; overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+    animation: fadeIn 0.4s ease both;
+  }
+  .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.3); }
+  .kpi-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--burgundy-light), var(--gold-mid));
+  }
+  .kpi-icon { font-size: 20px; margin-bottom: 10px; }
+  .kpi-value { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; color: var(--gold-bright); letter-spacing: -1px; line-height: 1; }
+  .kpi-label { font-size: 11px; color: var(--text-muted); font-weight: 600; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .kpi-sub { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+  .kpi-glow { position: absolute; bottom: -20px; right: -20px; width: 70px; height: 70px; border-radius: 50%; background: radial-gradient(circle, rgba(240,196,25,0.08), transparent); }
+  .main-grid { display: grid; grid-template-columns: 1fr 340px; gap: 18px; margin-bottom: 18px; }
+  .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 20px; }
+  .card-title { font-family: 'Playfair Display', serif; font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+  .card-subtitle { font-size: 10px; color: var(--text-muted); font-weight: 500; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }
+  .badge { padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .badge-gold { background: rgba(240,196,25,0.15); color: var(--gold-bright); border: 1px solid rgba(240,196,25,0.25); }
+  .badge-burgundy { background: rgba(176,48,96,0.15); color: var(--burgundy-bright); border: 1px solid rgba(176,48,96,0.25); }
+  .kanban-wrap { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; }
+  .kanban-col { min-width: 175px; flex: 1; }
+  .kanban-col-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .stage-label { font-size: 10px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; }
+  .stage-count { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; }
+  .deal-card { border-radius: 12px; padding: 12px; margin-bottom: 8px; background: #2a0f1a; border: 1px solid var(--card-border); border-left-width: 3px; transition: transform 0.15s; cursor: pointer; }
+  .deal-card:hover { transform: translateX(3px); }
+  .deal-product { font-size: 12px; font-weight: 700; color: var(--text-primary); margin-bottom: 3px; }
+  .deal-buyer { font-size: 11px; color: var(--text-muted); margin-bottom: 8px; }
+  .deal-footer { display: flex; align-items: center; justify-content: space-between; }
+  .deal-value { font-family: 'Playfair Display', serif; font-size: 14px; font-weight: 700; color: var(--gold-bright); }
+  .priority-tag { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; }
+  .empty-col { border: 1px dashed #2d1520; border-radius: 10px; padding: 20px; text-align: center; color: #3d1525; font-size: 11px; }
+  .right-col { display: flex; flex-direction: column; gap: 16px; }
+  .agent-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; }
+  .agent-row + .agent-row { border-top: 1px solid var(--divider); }
+  .agent-name { font-size: 12px; color: var(--text-secondary); font-weight: 500; }
+  .agent-right { display: flex; align-items: center; gap: 8px; }
+  .agent-calls { font-size: 10px; color: var(--text-muted); }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gold-bright); box-shadow: 0 0 6px var(--gold-bright); animation: pulse 2s infinite; }
+  .gold-divider { height: 1px; background: linear-gradient(90deg, transparent, rgba(240,196,25,0.3), transparent); margin: 4px 0 14px; }
+  .bottom-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+  .opp-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; }
+  .opp-row + .opp-row { border-top: 1px solid var(--divider); }
+  .score-circle { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 700; flex-shrink: 0; }
+  .score-high { background: rgba(240,196,25,0.15); color: var(--gold-bright); }
+  .score-mid  { background: rgba(176,48,96,0.15);  color: var(--burgundy-bright); }
+  .opp-product { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+  .opp-country { font-size: 11px; color: var(--text-muted); }
+  .opp-signal { font-size: 11px; color: var(--text-secondary); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .hunt-card { background: #2a0f1a; border: 1px solid var(--card-border); border-left: 3px solid var(--gold-mid); border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+  .hunt-card:last-child { margin-bottom: 0; }
+  .hunt-header { display: flex; justify-content: space-between; margin-bottom: 5px; }
+  .hunt-product { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+  .hunt-date { font-size: 10px; color: var(--text-muted); }
+  .hunt-country { font-size: 11px; color: var(--text-muted); margin-bottom: 7px; }
+  .hunt-buyer { font-size: 11px; font-weight: 600; color: var(--gold-mid); background: rgba(240,196,25,0.08); padding: 4px 8px; border-radius: 6px; display: inline-block; }
+  .buyer-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; }
+  .buyer-row + .buyer-row { border-top: 1px solid var(--divider); }
+  .buyer-avatar { width: 38px; height: 38px; border-radius: 12px; background: linear-gradient(135deg, var(--burgundy-light), var(--gold-deep)); display: flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 700; color: white; flex-shrink: 0; }
+  .buyer-name { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+  .buyer-company { font-size: 11px; color: var(--text-muted); }
+  .buyer-tags { display: flex; gap: 5px; margin-top: 5px; }
+  .tag { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px; }
+  .tag-product { color: var(--gold-bright); background: rgba(240,196,25,0.1); }
+  .tag-status { color: var(--burgundy-bright); background: rgba(176,48,96,0.1); }
+  .doc-alert { background: #2a0f1a; border: 1px solid rgba(240,196,25,0.2); border-left: 3px solid var(--gold-mid); border-radius: 12px; padding: 12px; margin-bottom: 8px; }
+  .doc-name { font-size: 12px; font-weight: 700; color: var(--text-primary); }
+  .doc-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 7px; }
+  .doc-expiry { font-size: 11px; color: var(--text-muted); }
+  .doc-status { font-size: 10px; font-weight: 700; color: #10b981; background: rgba(16,185,129,0.1); padding: 2px 7px; border-radius: 4px; }
+  .footer { margin-top: 18px; padding: 14px 20px; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; display: flex; align-items: center; justify-content: space-between; }
+  .footer-left { font-size: 11px; color: var(--text-muted); }
+  .footer-left span { color: var(--gold-mid); font-weight: 700; }
+  .footer-agents { display: flex; gap: 16px; }
+  .footer-agent { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-muted); }
+  .footer-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--gold-bright); box-shadow: 0 0 5px var(--gold-bright); }
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: var(--burgundy-deep); }
+  ::-webkit-scrollbar-thumb { background: var(--burgundy-mid); border-radius: 4px; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+  .skeleton { background: linear-gradient(90deg, #2d0f1a 25%, #3d1525 50%, #2d0f1a 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 6px; }
+  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+  .error-msg { color: #ef4444; font-size: 11px; padding: 8px; background: rgba(239,68,68,0.1); border-radius: 6px; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo">C</div>
+    <div>
+      <div class="app-name">Comexim Global Trade Orchestrator</div>
+      <div class="app-subtitle">Export Intelligence Command Center</div>
+    </div>
+  </div>
+  <div class="last-updated" id="lastUpdated">Loading data...</div>
+  <div class="header-badge">
+    <div class="pulse"></div>
+    7 AI Agents Active · claude-sonnet-4-6
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="loading-bar" id="loadingBar"></div>
+
+  <!-- KPI ROW -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-icon">💰</div>
+      <div class="kpi-value" id="kpiPipeline">...</div>
+      <div class="kpi-label">Pipeline Value</div>
+      <div class="kpi-sub" id="kpiDealsCount">Loading...</div>
+      <div class="kpi-glow"></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon">📊</div>
+      <div class="kpi-value" id="kpiActiveDeals">...</div>
+      <div class="kpi-label">Active Deals</div>
+      <div class="kpi-sub" id="kpiHotDeals">Loading...</div>
+      <div class="kpi-glow"></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon">🌍</div>
+      <div class="kpi-value" id="kpiOpportunities">...</div>
+      <div class="kpi-label">Opportunities</div>
+      <div class="kpi-sub" id="kpiAvgScore">Loading...</div>
+      <div class="kpi-glow"></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon">👥</div>
+      <div class="kpi-value" id="kpiContacts">...</div>
+      <div class="kpi-label">Global Buyers</div>
+      <div class="kpi-sub" id="kpiCountries">Loading...</div>
+      <div class="kpi-glow"></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon">📋</div>
+      <div class="kpi-value" id="kpiDocuments">...</div>
+      <div class="kpi-label">Documents</div>
+      <div class="kpi-sub" id="kpiDocStatus">Loading...</div>
+      <div class="kpi-glow"></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon">🎯</div>
+      <div class="kpi-value" id="kpiHunts">...</div>
+      <div class="kpi-label">Intent Hunts</div>
+      <div class="kpi-sub" id="kpiSignals">Loading...</div>
+      <div class="kpi-glow"></div>
+    </div>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="main-grid">
+
+    <!-- PIPELINE KANBAN -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Deal Pipeline</div>
+          <div class="card-subtitle">AI Deal Coach active on all deals</div>
+        </div>
+        <span class="badge badge-gold">Live Data</span>
+      </div>
+      <div class="kanban-wrap" id="kanbanBoard">
+        <div style="color:var(--text-muted);font-size:12px;padding:20px;">Loading deals...</div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="right-col">
+
+      <!-- AI Agents -->
+      <div class="card">
+        <div class="card-title">🤖 AI Agents Status</div>
+        <div class="gold-divider"></div>
+        <div class="agent-row"><span class="agent-name">Market Hunter</span><div class="agent-right"><span class="agent-calls">Active</span><div class="status-dot"></div></div></div>
+        <div class="agent-row"><span class="agent-name">Intent Hunter</span><div class="agent-right"><span class="agent-calls">Active</span><div class="status-dot"></div></div></div>
+        <div class="agent-row"><span class="agent-name">Email Agent</span><div class="agent-right"><span class="agent-calls">Active</span><div class="status-dot"></div></div></div>
+        <div class="agent-row"><span class="agent-name">Deal Coach</span><div class="agent-right"><span class="agent-calls">Active</span><div class="status-dot"></div></div></div>
+        <div class="agent-row"><span class="agent-name">Cost Calculator</span><div class="agent-right"><span class="agent-calls">Active</span><div class="status-dot"></div></div></div>
+        <div class="agent-row"><span class="agent-name">Doc Checker</span><div class="agent-right"><span class="agent-calls">Active</span><div class="status-dot"></div></div></div>
+        <div class="agent-row"><span class="agent-name">Buyer Profiler</span><div class="agent-right"><span class="agent-calls">Active</span><div class="status-dot"></div></div></div>
+      </div>
+
+      <!-- Document Alerts -->
+      <div class="card">
+        <div class="card-title">📋 Document Alerts</div>
+        <div class="gold-divider"></div>
+        <div id="documentAlerts">
+          <div style="color:var(--text-muted);font-size:12px;">Loading documents...</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- BOTTOM GRID -->
+  <div class="bottom-grid">
+
+    <!-- Top Opportunities -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">🌍 Market Opportunities</div>
+          <div class="card-subtitle">Ranked by AI profitability score</div>
+        </div>
+        <span class="badge badge-gold" id="oppCount">Live</span>
+      </div>
+      <div id="opportunitiesList">
+        <div style="color:var(--text-muted);font-size:12px;">Loading opportunities...</div>
+      </div>
+    </div>
+
+    <!-- Intent Hunt Activity -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">🎯 Intent Hunter Activity</div>
+          <div class="card-subtitle">Recent buyer signals discovered</div>
+        </div>
+        <span class="badge badge-burgundy" id="huntCount">Live</span>
+      </div>
+      <div id="huntActivity">
+        <div style="color:var(--text-muted);font-size:12px;">Loading hunts...</div>
+      </div>
+    </div>
+
+    <!-- Active Buyers -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">👥 Active Buyers</div>
+          <div class="card-subtitle">Global contact intelligence</div>
+        </div>
+        <span class="badge badge-gold" id="contactCount">Live</span>
+      </div>
+      <div id="buyersList">
+        <div style="color:var(--text-muted);font-size:12px;">Loading buyers...</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-left">
+      Powered by <span>Claude claude-sonnet-4-6</span> ·
+      Built on <span>Zoho Creator</span> ·
+      <span>Comexim Global Trade Orchestrator</span>
+    </div>
+    <div class="footer-agents">
+      <div class="footer-agent"><div class="footer-dot"></div>Market Hunter</div>
+      <div class="footer-agent"><div class="footer-dot"></div>Intent Hunter</div>
+      <div class="footer-agent"><div class="footer-dot"></div>Deal Coach</div>
+      <div class="footer-agent"><div class="footer-dot"></div>Cost Calculator</div>
+      <div class="footer-agent"><div class="footer-dot"></div>Email Agent</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+// ZOHO CREATOR API CONNECTION
+// Replace REFRESH_TOKEN_HERE with your actual refresh token
+// ============================================================
+const CONFIG = {
+  refreshToken:  "1000.0143d96ec479fa097b5534b0ab316972.27d4f61337392a9ed14486817bc2b12c",
+  clientId:      "1000.3FQJ06477WRX07IIP75UM48FNSYLEL",
+  clientSecret:  "83757c7b1d40babec926b74ef62a855d370d6087a2",
+  accountName:   "manjeet_comexim",
+  appName:       "admindashboard",
+  zohoAccounts:  "https://accounts.zoho.in",
+  zohoCreator:   "https://creator.zoho.in/api/v2"
+};
+
+const STAGES = {
+  "New Enquiry":     "#c49a00",
+  "Sample Sent":     "#b03060",
+  "Negotiation":     "#7a5c00",
+  "PO Received":     "#5c1f33",
+  "Shipment Booked": "#3d1525",
+  "Docs Submitted":  "#2d0f1a",
+  "Payment Pending": "#8b2e4a",
+  "Closed Won":      "#10b981",
+  "Closed Lost":     "#ef4444",
+  "On Hold":         "#6b7280"
+};
+
+let accessToken = null;
+
+// Get fresh access token using refresh token
+async function getAccessToken() {
+  try {
+    const resp = await fetch(`${CONFIG.zohoAccounts}/oauth/v2/token`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        refresh_token: CONFIG.refreshToken,
+        client_id:     CONFIG.clientId,
+        client_secret: CONFIG.clientSecret,
+        grant_type:    "refresh_token"
+      })
+    });
+    const data = await resp.json();
+    if (data.access_token) {
+      accessToken = data.access_token;
+      return true;
+    }
+    console.error("Token error:", data);
+    return false;
+  } catch (e) {
+    console.error("Token fetch failed:", e);
+    return false;
+  }
+}
+
+// Fetch data from Zoho Creator report
+async function fetchReport(reportName) {
+  try {
+    const url = `${CONFIG.zohoCreator}/${CONFIG.accountName}/${CONFIG.appName}/report/${reportName}`;
+    const resp = await fetch(url, {
+      headers: { "Authorization": `Zoho-oauthtoken ${accessToken}` }
+    });
+    const data = await resp.json();
+    return data.data || [];
+  } catch (e) {
+    console.error(`Failed to fetch ${reportName}:`, e);
+    return [];
+  }
+}
+
+// Format currency
+function formatCurrency(val) {
+  const n = parseFloat(val) || 0;
+  if (n >= 1000000) return "$" + (n/1000000).toFixed(1) + "M";
+  if (n >= 1000) return "$" + (n/1000).toFixed(0) + "K";
+  return "$" + n.toFixed(0);
+}
+
+// Render Kanban board
+function renderKanban(deals) {
+  const board = document.getElementById("kanbanBoard");
+  if (!deals.length) {
+    board.innerHTML = '<div style="color:var(--text-muted);font-size:12px;padding:20px;">No deals found. Add deals in Zoho Creator.</div>';
+    return;
+  }
+
+  const stageOrder = ["New Enquiry","Sample Sent","Negotiation","PO Received","Shipment Booked","Closed Won"];
+  let html = "";
+
+  stageOrder.forEach(stage => {
+    const stageDeals = deals.filter(d => (d.Pipeline_Stage || d.Stage || "") === stage);
+    const color = STAGES[stage] || "#6b7280";
+    html += `<div class="kanban-col">
+      <div class="kanban-col-header">
+        <span class="stage-label" style="color:${color}">${stage}</span>
+        <span class="stage-count" style="background:${color}20;color:${color}">${stageDeals.length}</span>
+      </div>`;
+
+    if (!stageDeals.length) {
+      html += `<div class="empty-col">No Records</div>`;
+    } else {
+      stageDeals.forEach(deal => {
+        const priority = deal.Deal_Priority || "Warm";
+        const pColor = priority.includes("Hot") ? "#ef4444" : priority.includes("Warm") ? "#f59e0b" : "#6b7280";
+        const pIcon = priority.includes("Hot") ? "🔥" : priority.includes("Warm") ? "♨️" : "❄️";
+        const value = formatCurrency(deal.Deal_Value_USD || deal.Deal_Value || 0);
+        const buyer = deal.Buyer || deal.Buyer_Contact || "Unknown";
+        const product = deal.Product || deal.Deal_Product || "Unknown";
+        html += `<div class="deal-card" style="border-left-color:${color}">
+          <div class="deal-product">${product}</div>
+          <div class="deal-buyer">${buyer}</div>
+          <div class="deal-footer">
+            <span class="deal-value">${value}</span>
+            <span class="priority-tag" style="background:${pColor}20;color:${pColor}">${pIcon} ${priority.replace("🔥","").replace("♨️","").replace("❄️","").trim()}</span>
+          </div>
+        </div>`;
+      });
+    }
+    html += `</div>`;
+  });
+
+  board.innerHTML = html;
+}
+
+// Render opportunities
+function renderOpportunities(opps) {
+  const list = document.getElementById("opportunitiesList");
+  const countEl = document.getElementById("oppCount");
+  if (!opps.length) {
+    list.innerHTML = '<div style="color:var(--text-muted);font-size:12px;">No opportunities found.</div>';
+    return;
+  }
+
+  const sorted = [...opps].sort((a,b) => (parseInt(b.Profitability_Score)||0) - (parseInt(a.Profitability_Score)||0));
+  countEl.textContent = sorted.length + " Active";
+
+  let html = "";
+  sorted.slice(0,5).forEach(opp => {
+    const score = parseInt(opp.Profitability_Score) || 0;
+    const scoreClass = score >= 80 ? "score-high" : "score-mid";
+    const product = opp.Market_Opportunities || opp.Product || "Unknown";
+    const country = opp.Target_Country || "Unknown";
+    const signal = opp.Market_Signal || "No signal available";
+    html += `<div class="opp-row">
+      <div class="score-circle ${scoreClass}">${score}</div>
+      <div style="flex:1;min-width:0">
+        <div class="opp-product">${product}</div>
+        <div class="opp-country">${country}</div>
+        <div class="opp-signal">${signal}</div>
+      </div>
+    </div>`;
+  });
+
+  list.innerHTML = html;
+}
+
+// Render hunt activity
+function renderHunts(hunts) {
+  const container = document.getElementById("huntActivity");
+  const countEl = document.getElementById("huntCount");
+  if (!hunts.length) {
+    container.innerHTML = '<div style="color:var(--text-muted);font-size:12px;">No hunts found.</div>';
+    return;
+  }
+
+  countEl.textContent = hunts.length + " Hunts";
+  let html = "";
+  hunts.slice(0,3).forEach(hunt => {
+    const product = hunt.Product_Name || "Unknown";
+    const country = hunt.Target_Country || "Unknown";
+    const summary = hunt.Hunt_Summary || "";
+    const date = hunt.Added_Time ? new Date(hunt.Added_Time).toLocaleDateString() : "Recent";
+    const topBuyer = summary.includes("Recommended First Target:") 
+      ? summary.split("Recommended First Target:")[1].trim().substring(0,40) + "..."
+      : "See full report";
+
+    html += `<div class="hunt-card">
+      <div class="hunt-header">
+        <span class="hunt-product">${product}</span>
+        <span class="hunt-date">${date}</span>
+      </div>
+      <div class="hunt-country">→ ${country}</div>
+      <span class="hunt-buyer">🏆 ${topBuyer}</span>
+    </div>`;
+  });
+
+  container.innerHTML = html;
+}
+
+// Render buyers
+function renderBuyers(contacts) {
+  const list = document.getElementById("buyersList");
+  const countEl = document.getElementById("contactCount");
+  if (!contacts.length) {
+    list.innerHTML = '<div style="color:var(--text-muted);font-size:12px;">No contacts found.</div>';
+    return;
+  }
+
+  countEl.textContent = contacts.length + " Contacts";
+  const countries = [...new Set(contacts.map(c => c.Country).filter(Boolean))];
+
+  let html = "";
+  contacts.slice(0,4).forEach(contact => {
+    const name = (contact.Contact_Name || contact.Name || "Unknown").toString();
+    const company = contact.Company_Name || "Unknown";
+    const country = contact.Country || "";
+    const product = contact.Product_Category || "";
+    const status = contact.Buyer_Status || "New Lead";
+    const initial = name.charAt(0).toUpperCase();
+
+    html += `<div class="buyer-row">
+      <div class="buyer-avatar">${initial}</div>
+      <div style="flex:1;min-width:0">
+        <div class="buyer-name">${name}</div>
+        <div class="buyer-company">${company} · ${country}</div>
+        <div class="buyer-tags">
+          ${product ? `<span class="tag tag-product">${product}</span>` : ""}
+          <span class="tag tag-status">${status}</span>
+        </div>
+      </div>
+    </div>`;
+  });
+
+  list.innerHTML = html;
+
+  // Update countries KPI
+  document.getElementById("kpiCountries").textContent = countries.length + " countries";
+}
+
+// Render documents
+function renderDocuments(docs) {
+  const container = document.getElementById("documentAlerts");
+  if (!docs.length) {
+    container.innerHTML = '<div style="color:var(--text-muted);font-size:12px;">No documents found.</div>';
+    return;
+  }
+
+  let html = "";
+  docs.slice(0,3).forEach(doc => {
+    const name = doc.Doc_Name || "Unknown Document";
+    const type = doc.Doc_Type || "";
+    const expiry = doc.Doc_Expiry_Date || "No expiry";
+    const status = doc.Doc_Status || "Unknown";
+    const statusColor = status === "Approved" ? "#10b981" : status === "Expired" ? "#ef4444" : "#f59e0b";
+
+    html += `<div class="doc-alert">
+      <div class="doc-name">${name}</div>
+      <div class="doc-footer">
+        <span class="doc-expiry">Expires: ${expiry}</span>
+        <span class="doc-status" style="color:${statusColor};background:${statusColor}20">✓ ${status}</span>
+      </div>
+    </div>`;
+  });
+
+  container.innerHTML = html;
+}
+
+// Update KPI cards
+function updateKPIs(deals, contacts, opps, docs, hunts) {
+  // Pipeline value
+  const totalValue = deals.reduce((sum, d) => sum + (parseFloat(d.Deal_Value_USD || d.Deal_Value) || 0), 0);
+  document.getElementById("kpiPipeline").textContent = formatCurrency(totalValue);
+  document.getElementById("kpiDealsCount").textContent = deals.length + " total deals";
+
+  // Active deals
+  const activeDeals = deals.filter(d => !["Closed Won","Closed Lost"].includes(d.Pipeline_Stage));
+  document.getElementById("kpiActiveDeals").textContent = activeDeals.length;
+  const hotDeals = deals.filter(d => (d.Deal_Priority||"").includes("Hot")).length;
+  document.getElementById("kpiHotDeals").textContent = hotDeals + " hot deals";
+
+  // Opportunities
+  document.getElementById("kpiOpportunities").textContent = opps.length;
+  const avgScore = opps.length ? Math.round(opps.reduce((s,o) => s + (parseInt(o.Profitability_Score)||0), 0) / opps.length) : 0;
+  document.getElementById("kpiAvgScore").textContent = "Avg score: " + avgScore + "/100";
+
+  // Contacts
+  document.getElementById("kpiContacts").textContent = contacts.length;
+
+  // Documents
+  document.getElementById("kpiDocuments").textContent = docs.length;
+  const expiring = docs.filter(d => d.Doc_Status === "Renewal Due" || d.Doc_Status === "Expired").length;
+  document.getElementById("kpiDocStatus").textContent = expiring > 0 ? expiring + " need renewal" : "All approved";
+
+  // Hunts
+  document.getElementById("kpiHunts").textContent = hunts.length;
+  document.getElementById("kpiSignals").textContent = (hunts.length * 5) + " buyer signals";
+}
+
+// Main load function
+async function loadDashboard() {
+  const loadingBar = document.getElementById("loadingBar");
+  loadingBar.style.display = "block";
+
+  try {
+    const tokenOk = await getAccessToken();
+    if (!tokenOk) {
+      document.getElementById("kanbanBoard").innerHTML = '<div class="error-msg">⚠️ Authentication failed. Check your refresh token and client secret in the HTML file.</div>';
+      loadingBar.style.display = "none";
+      return;
+    }
+
+    // Fetch all data in parallel
+    const [deals, contacts, opps, docs, hunts] = await Promise.all([
+      fetchReport("All_Deals_Pipeline"),
+      fetchReport("All_Global_Contacts"),
+      fetchReport("All_Market_Opportunities"),
+      fetchReport("All_Document_Vault"),
+      fetchReport("All_Intent_Hunter")
+    ]);
+
+    // Render everything
+    renderKanban(deals);
+    renderOpportunities(opps);
+    renderHunts(hunts);
+    renderBuyers(contacts);
+    renderDocuments(docs);
+    updateKPIs(deals, contacts, opps, docs, hunts);
+
+    // Update last refreshed time
+    const now = new Date();
+    document.getElementById("lastUpdated").textContent =
+      "Last updated: " + now.toLocaleTimeString();
+
+  } catch (e) {
+    console.error("Dashboard load failed:", e);
+    document.getElementById("kanbanBoard").innerHTML =
+      '<div class="error-msg">⚠️ Failed to load data. Check console for details.</div>';
+  }
+
+  loadingBar.style.display = "none";
+}
+
+// Load on page open
+loadDashboard();
+
+// Auto refresh every 5 minutes
+setInterval(loadDashboard, 5 * 60 * 1000);
+</script>
+</body>
+</html>
